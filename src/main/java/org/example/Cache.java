@@ -1,19 +1,16 @@
 package org.example;
 
 import java.util.HashMap;
-import java.util.*;
 
 public class Cache {
     private HashMap<Integer, Node> map;
-    private DoublyLinkedList list;
     private EvictionPolicyStrategy evictionPolicyStrategy;
     int capacity;
-    int currentCapacity;
 
-    public Cache(int capacity) {
+    public Cache(int capacity, EvictionPolicyStrategy evictionPolicyStrategy) {
         this.map = new HashMap<>();
-        this.list = new DoublyLinkedList();
         this.capacity = capacity;
+        this.evictionPolicyStrategy = evictionPolicyStrategy;
     }
 
     public int get(int key) throws Exception {
@@ -24,31 +21,28 @@ public class Cache {
          */
         Node node = map.getOrDefault(key, null);
         if (node == null) throw new Exception("Key Not Found");
-        if (!this.list.removeNode(node)) throw new Exception("Inconsistent cache");
-        this.list.addToFront(node);
+        evictionPolicyStrategy.onAccess(node);
         return node.getValue();
     }
 
     public void set(int key, int value) throws Exception {
         /* Core logic
-        1. If key already exists - update that node and bring it front
-        2. Else, create a new node and add in map and LL.
-        3. If capacity == currentCapacity, then evict one with your policy and then add
+        1. If key exists, update the node and return.
+        2. Else we have to create a new node.
+            But First evict if no place.
+        3. Create new node and add to map and ordering.
          */
-        if (capacity == currentCapacity) {
-            evictionPolicyStrategy.delete();
-        }
-        Node node;
         if (map.containsKey(key)) {
-            node = map.get(key);
+            Node node = map.get(key);
             node.setValue(value);
+            this.evictionPolicyStrategy.onAccess(node);
         }
-        else {
-            node = new Node (key, value);
-            map.put(key, node);
-            currentCapacity++;
+        if (capacity == map.size()) {
+            Node evictedNode = evictionPolicyStrategy.evict();
+            map.remove(evictedNode.getKey());
         }
-        this.list.removeNode(node);
-        this.list.addToFront(node);
+        Node node = new Node (key, value);
+        map.put(key, node);
+        this.evictionPolicyStrategy.add(node);
     }
 }
