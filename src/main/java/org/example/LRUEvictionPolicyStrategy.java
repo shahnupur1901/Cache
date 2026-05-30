@@ -1,6 +1,6 @@
 package org.example;
 
-public class LRUEvictionPolicyStrategy extends EvictionPolicyStrategy {
+public class LRUEvictionPolicyStrategy implements EvictionPolicyStrategy {
     private DoublyLinkedList list = new DoublyLinkedList();
 
     public LRUEvictionPolicyStrategy() {
